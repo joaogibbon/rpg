@@ -445,7 +445,7 @@ while jogando:
                         sleep(3)
                         print(' TROVÕES IRROMPEM TODA A REGIÃO, ESTREMECENDO O ÍMPITO DO INIMIGO.\n')
                         sleep(3)
-                        print(' DO MADA, UMA ENORME EXPLOSÃO ARREMESSA OS INIMIGOS CENTENAS DE METROS...\n')
+                        print(' DO NADA, UMA ENORME EXPLOSÃO ARREMESSA OS INIMIGOS CENTENAS DE METROS...\n')
                         sleep(3)
                         print(' DO SEU EPICENTRO, ESTÁ NOSSO HERÓI...\n')
                         sleep(3)
@@ -588,4 +588,3 @@ while jogando:
 
 print('\n -FIM-')
 sleep(3)
-
