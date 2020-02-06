@@ -9,6 +9,7 @@ from typing import List, Optional
 # 0002 - movendo o input para dentro de valida_str e valida_int, type hints
 # 0003 - slow print, impressao em caixa
 # 0004 - Constantes
+# 0005 - Instruções movidas para arquivo externo
 
 ATRASO_PADRAO = 3
 ATRASO_METADE = ATRASO_PADRAO / 2
@@ -24,6 +25,8 @@ INIMIGO_FORA_DA_LISTA = ' INIMIGO NÃO SE ENCONTRA NA LISTA !!!\n'
 NUMERO_INVALIDO = ' NÚMERO INVÁLIDO !!!\n'
 TITULO_REGRA = '.::..::| INSTRUÇÕES/REGRAS |::..::.'
 PRESSIONE_ENTER = '\n\n.::| PRESSIONE ENTER PARA COMEÇAR |::.\n'
+
+INSTRUCOES = None
 
 # Valores iniciais e limites
 
@@ -78,28 +81,13 @@ def atraso(n: int) -> float:
 
 
 def instrucao():
+    global INSTRUCOES
     print(f'\n{TITULO_REGRA:^40}')
-    print('\n      - Escolha o número de inimigos;\n\n      '
-          '- Escolha a ação desejada;\n\n      - ATACAR:\n\n          '
-          'O Herói SEMPRE acerta o inimigo, infligindo 10-15 de dano ao alvo selecionado;\n\n'
-          '       - CURAR:\n\n          Recupera 20-50 pontos de vida do Herói, custo de 10 SP;\n\n'
-          '       - MODO BESERKER:\n\n               Ao ter seu limite levado ao extremo, o Herói rompe as barreiras \n'
-          '               de suas limitações mundanas, elevando-se ao status BESERKER; (Ler REGRA abaixo)\n\n       '
-          '- SUPER CURA:\n\n          Recupera 250 pontos de vida do Herói, custo de 50 SP; (Ler REGRA abaixo)\n\n       '
-          '- ATAQUE INIMIGO:\n\n          O inimigo terá 25% de chance de errar o ataque (50% após o MODO BESERKER) , caso contrário, \n'
-          '          infligirá 1-3 pontos de dano ao Herói; \n\n       REGRA_Geral:\n\n            '
-          'A cada rodada você ganhará 3 de SP, a não ser \n            quando o "MODO BESERKER" for DESATIVADO; \n\n       '
-          'REGRAS_Beserker: \n\n        - O MODO BESERKER será ativado 1 VEZ por jogo;\n\n        - Contém DUAS RODADAS;\n\n        '
-          '- Em cada rodada, o heroi irá realizar ATAQUES SUCESSIVOS e ALEATÓRIOS;\n          '
-          '( o jogador não poderá escolher o inimigo a ser atacado neste modo.)\n\n        '
-          '- O nº de ataques POR RODADA, será igual à quantidade de inimigo no campo de batalha;\n\n        '
-          '- Cada ataque, gera 20-40 pontos de dano ao inimigo;\n\n        - O inimigo não consegue atacar o Herói no MODO BESERKER;\n\n        '
-          '- Ao final das duas rodadas, o MODO BESERKER será DESATIVADO;\n\n        '
-          '- O Herói irá drenar, em forma de pontos de vida, 10% do DANO TOTAL \n         '
-          ' aplicado por ele nas duas rodadas;\n\n        - Ao ser DESATIVADO, o Herói terá ZERO de SP;      '
-          '\n\n       REGRA_Super_Cura:\n            '
-          'Requisitos para ATIVAR a "SUPER CURA":   \n            - Nº de inimigos > 10;\n            '
-          '- Nº de turnos na partida for múltiplo de 10;\n\n      ')
+    # Carrega as instruções do arquivo externo, mas só na primeira vez.
+    if INSTRUCOES is None:
+        with open("instruções.txt", "r", encoding="utf-8") as f:
+            INSTRUCOES = f.read()
+    print(INSTRUCOES)
     input(PRESSIONE_ENTER)
 
 
