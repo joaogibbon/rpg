@@ -10,7 +10,7 @@ from typing import List, Optional
 # 0003 - slow print, impressao em caixa
 # 0004 - Constantes
 # 0005 - Instruções movidas para arquivo externo
-
+# 0006 - Função pre-berzerker, correção de erros de acentuação
 ATRASO_PADRAO = 3
 ATRASO_METADE = ATRASO_PADRAO / 2
 ATRASO_MEDIO = ATRASO_PADRAO * 2 / 3
@@ -20,9 +20,9 @@ ATRASO_LONGO = 0.25
 
 # Mensagens
 
-OPCAO_INVALIDA = ' OPÇÃO INVÁLIDA !!!\n'
-INIMIGO_FORA_DA_LISTA = ' INIMIGO NÃO SE ENCONTRA NA LISTA !!!\n'
-NUMERO_INVALIDO = ' NÚMERO INVÁLIDO !!!\n'
+OPCAO_INVALIDA = 'OPÇÃO INVÁLIDA !!!\n'
+INIMIGO_FORA_DA_LISTA = 'INIMIGO NÃO SE ENCONTRA NA LISTA !!!\n'
+NUMERO_INVALIDO = 'NÚMERO INVÁLIDO !!!\n'
 TITULO_REGRA = '.::..::| INSTRUÇÕES/REGRAS |::..::.'
 PRESSIONE_ENTER = '\n\n.::| PRESSIONE ENTER PARA COMEÇAR |::.\n'
 
@@ -91,9 +91,42 @@ def instrucao():
     input(PRESSIONE_ENTER)
 
 
+def pre_berkerker(player_vida):
+    slow_print(f'\n VIDA DO HERÓI = {player_vida}', atraso=ATRASO_PADRAO)
+    slow_print(' ...', atraso=ATRASO_PEQUENO)
+    slow_print(' ..', atraso=ATRASO_PEQUENO)
+    slow_print(' .', atraso=ATRASO_PEQUENO)
+    slow_print('\n GOLPE FATAL !!!', atraso=ATRASO_PADRAO)
+    slow_print('\n NOSSO HERÓI SUCUMBE DIANTE DA HORDA INIMIGA ...', atraso=5)
+    slow_print(' ...', atraso=ATRASO_PEQUENO)
+    slow_print(' ..', atraso=ATRASO_PEQUENO)
+    slow_print(' .', atraso=ATRASO_PEQUENO)
+    slow_print('\n É O FIM.', end='', atraso=ATRASO_PADRAO * 2)
+    slow_print('.', end='', atraso=ATRASO_PEQUENO)
+    slow_print('.', end='',  atraso=ATRASO_PEQUENO)
+    slow_print(' MAS ESPERE !!!!!\n', atraso=ATRASO_PEQUENO)
+    slow_print(' O QUE ESTÁ ACONTECENDO...?!?!?\n', atraso=ATRASO_PADRAO)
+    slow_print(' NÚVENS NEGRAS SURGEM E O CÉU COMEÇA A ESCURECER...\n', atraso=ATRASO_PADRAO)
+    slow_print(' TUDO ESTÁ TREMENDO,\n', atraso=ATRASO_PADRAO)
+    slow_print(' RAIOS ECLODEM DA TERRA E RASGAM O CÉU...\n', atraso=ATRASO_PADRAO)
+    slow_print(' TROVÕES IRROMPEM TODA A REGIÃO, ESTREMECENDO O ÍMPITO DO INIMIGO.\n', atraso=ATRASO_PADRAO)
+    slow_print(' DO MADA, UMA ENORME EXPLOSÃO ARREMESSA OS INIMIGOS CENTENAS DE METROS...\n', atraso=ATRASO_PADRAO)
+    slow_print(' DO SEU EPICENTRO, ESTÁ NOSSO HERÓI...\n', atraso=ATRASO_PADRAO)
+    slow_print(' MAS AGORA ELE ESTÁ DIFERENTE...\n', atraso=ATRASO_PADRAO)
+    slow_print(' AGORA ELE ESTÁ SEDENTO POR SANGUE.\n', atraso=ATRASO_PADRAO)
+    slow_print(' NOSSO HERÓI SE TORNOU...UM BESERKER !!!\n', atraso=ATRASO_PADRAO)
+    slow_print(' TEMIDO POR SUA IRA, O BESERKER SE TORNOU UMA LENDA...\n', atraso=ATRASO_PADRAO)
+    slow_print(' SEU CORPO POSSUI UMA AURA NEGRA E VERVELHA, SEUS OLHOS SÃO BRANCOS, E DELES SAEM\n'
+               ' RAIOS QUE ESTRAÇALHAM AS ROCHAS AO SEU REDOR; \n', atraso=ATRASO_PADRAO)
+    slow_print(' FLUTUAMDO RENTE AO SOLO, NOSSO HERÓI ENCARA OS INIMIGOS...\n', atraso=ATRASO_PADRAO)
+    slow_print(' E EM FRAÇÃO DE SEGUNDOS OS ALCANÇA, DESFERINDO ATAQUES DE GRANDE PODER.\n', atraso=ATRASO_PADRAO)
+    input(' PRESSIONE ENTER PARA CONTINUAR...\n')
+    sleep(ATRASO_PEQUENO)
+
+
 caixa(f"{'-' * 40}  A LENDA DO BESERKER {'-' * 40}", borda="-", margem=0)
 
-iniciar = valida_str('CI', '\n Pressione (C)omeçar ou (I)nstruções:\n')
+iniciar = valida_str('CI', '\nPressione (C)omeçar ou (I)nstruções:\n')
 
 jogando = True
 
@@ -109,7 +142,7 @@ while jogando:
     n_rodadas_b = 0
     n_super_cura = True
     n_inimigos = valida_int(range(1, MAX_INIMIGOS + 1),
-                            "\n Escolha o número de inimigos:\n",
+                            "\nEscolha o número de inimigos:\n",
                             NUMERO_INVALIDO)
 
     lista_inimigo: List[List[int]] = []
@@ -140,7 +173,7 @@ while jogando:
             if n_rodadas > 0:
                 if n_inimigos > 10 and n_rodadas % 10 == 0:
                     print('-----.::| SUPER-CURA ativada |::.-----\n')
-            opcao = valida_int([1, 2], ' Selecione ATACAR (1), Skills (2): \n')
+            opcao = valida_int([1, 2], 'Selecione ATACAR (1), Skills (2): \n')
             if opcao == 1:
                 erro_skill = False
                 lista_limite = []
@@ -148,7 +181,7 @@ while jogando:
                     lista_limite.append(inimigo[0])
 
                 inimigo = valida_int(lista_limite,
-                                     ' Selecione um inimigo da lista acima: \n',
+                                     'Selecione um inimigo da lista acima: \n',
                                      INIMIGO_FORA_DA_LISTA)
                 escolhido = []
                 for i in lista_inimigo:
@@ -164,7 +197,7 @@ while jogando:
                            f"({pv_inimigo_antes} - {dano_player} = {escolhido[1]})", atraso=ATRASO_METADE)
                 if escolhido[1] <= 0:
                     str_inimigo = str(escolhido[0])
-                    caixa(f'  Voce matou o inimigo {str_inimigo}!', borda='x')
+                    caixa(f'  Você matou o inimigo {str_inimigo}!', borda='x')
                     sleep(1.25)
                     lista_inimigo.remove(escolhido)
                     n_inimigos -= 1
@@ -174,13 +207,13 @@ while jogando:
                     if erro_skill:
                         break
                     if n_rodadas % 10 == 0 and n_rodadas != 0 and n_inimigos > 10:
-                        skill = valida_int([1, 2, 3, 4], ' Selecione a Skill desejada: \n '
+                        skill = valida_int([1, 2, 3, 4], 'Selecione a Skill desejada: \n '
                                                          '- PIERCE (1)\n '
                                                          '- SLASH (2)\n '
                                                          '- CURAR (3)\n '
                                                          '- SUPER-CURA (4)\n')
                     else:
-                        skill = valida_int([1, 2, 3], ' Selecione a Skill desejada: \n '
+                        skill = valida_int([1, 2, 3], 'Selecione a Skill desejada: \n '
                                                       '- PIERCE (1)\n '
                                                       '- SLASH (2)\n '
                                                       '- CURAR (3)\n')
@@ -190,11 +223,11 @@ while jogando:
 
                     if skill == 1:
                         if player_sp < 10:
-                            slow_print('\n Você não possui SP suficiente (PIERCE = 10 SP)', ATRASO_PADRAO)
+                            slow_print('\n ocê não possui SP suficiente (PIERCE = 10 SP)', ATRASO_PADRAO)
                             erro_skill = True
                         else:
                             player_sp -= 10
-                            inimigo_p = valida_int(lista_limite, ' Selecione um inimigo da lista acima: \n',
+                            inimigo_p = valida_int(lista_limite, 'Selecione um inimigo da lista acima:\n',
                                                    INIMIGO_FORA_DA_LISTA)
                             escolhido = []
                             for i in lista_inimigo:
@@ -205,7 +238,7 @@ while jogando:
                             dano_player = randint(25, 40)
                             pv_inimigo_antes = escolhido[1]
                             escolhido[1] -= dano_player
-                            caixa(f' PIERCE ATTACK no inimigo {escolhido[0]}')
+                            caixa(f'PIERCE ATTACK no inimigo {escolhido[0]}')
                             sleep(ATRASO_METADE)
                             slow_print(f"\n Você causou {dano_player} de dano ao inimigo {escolhido[0]} !"
                                        f" ({pv_inimigo_antes} - {dano_player} = {escolhido[1]})", atraso=ATRASO_METADE)
@@ -258,7 +291,7 @@ while jogando:
                                           f" ({pv_inimigo_antes} - {dano_player} = {inimigo_s[1]})")
                                     if inimigo_s[1] <= 0:
                                         str_inimigo = str(inimigo_s[0])
-                                        caixa(f'   Voce matou o inimigo {str_inimigo}!')
+                                        caixa(f'   Você matou o inimigo {str_inimigo}!')
                                         sleep(1.25)
                                         lista_inimigo.remove(inimigo_s)
                                         n_inimigos -= 1
@@ -273,17 +306,17 @@ while jogando:
                                             lista_inimigo_s.remove(inimigo_s)
 
                                 pv_inimigo_antes = 0
-                                caixa(' SLASH ATTACK !!!')
+                                caixa('SLASH ATTACK !!!')
                                 sleep(ATRASO_METADE)
                                 for inimigo_s in lista_inimigo_s:
                                     pv_inimigo_antes = inimigo_s[1]
                                     dano_player = randint(20, 35)
                                     inimigo_s[1] -= dano_player
-                                    print(f"\n Você causou {dano_player} de dano ao inimigo {inimigo_s[0]} !"
+                                    print(f"\nVocê causou {dano_player} de dano ao inimigo {inimigo_s[0]} !"
                                           f"  ({pv_inimigo_antes} - {dano_player} = {inimigo_s[1]})")
                                     if inimigo_s[1] <= 0:
                                         str_inimigo = str(inimigo_s[0])
-                                        caixa(f'   Voce matou o inimigo {str_inimigo}!')
+                                        caixa(f'Voce matou o inimigo {str_inimigo}!')
                                         sleep(1.25)
                                         lista_inimigo.remove(inimigo_s)
                                         n_inimigos -= 1
@@ -292,25 +325,25 @@ while jogando:
                                 break
                     elif skill == 3:
                         if player_sp < 8:
-                            slow_print('\n Você não possui SP suficiente (CURAR = 8 SP)', atraso=ATRASO_PADRAO)
+                            slow_print('\nVocê não possui SP suficiente (CURAR = 8 SP)', atraso=ATRASO_PADRAO)
                             erro_skill = True
                         else:
                             cura = randint(30, 50)
                             player_vida += cura
                             player_sp -= 8
-                            print(f' Você recuperou {cura} pontos de vida!\n')
+                            print(f'Você recuperou {cura} pontos de vida!\n')
                             print(f'  VIDA: {player_vida}')
                             slow_print(f'  SP: {player_sp}\n', atraso=ATRASO_MEDIO)
                             break
                     elif skill == 4:
                         if player_sp < 50:
-                            slow_print('\n Você não possui SP suficiente (SUPER CURAR = 50 SP)', atraso=ATRASO_PADRAO)
+                            slow_print('\nVocê não possui SP suficiente (SUPER CURAR = 50 SP)', atraso=ATRASO_PADRAO)
                             erro_skill = True
                         else:
                             player_vida += 250
                             player_sp -= 50
                             n_super_cura = False
-                            print(' Você recuperou {} pontos de vida!\n'.format(250))
+                            print('Você recuperou {} pontos de vida!\n'.format(250))
                             print(f'  VIDA: {player_vida}')
                             slow_print(f'  SP: {player_sp}\n', atraso=ATRASO_MEDIO)
                             break
@@ -320,7 +353,7 @@ while jogando:
         if n_inimigos == 0:
             sleep(ATRASO_METADE)
             print('\n Nº Inimigos = 0\n')
-            slow_print(' .::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.', atraso=ATRASO_PEQUENO)
+            slow_print('.::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.', atraso=ATRASO_PEQUENO)
             restart = valida_str('JS', ' (J)ogar novamente ou (S)air:\n')
             jogando = restart == 'J'
             break
@@ -334,54 +367,27 @@ while jogando:
                     dano_inimigo = randint(1, 3)
                     player_vida -= dano_inimigo
                     soma_dano_inimigo += dano_inimigo
-                    slow_print(f'\n Inimigo {i[0]} causou {dano_inimigo} de dano !', atraso(n_inimigos))
+                    slow_print(f'\nInimigo {i[0]} causou {dano_inimigo} de dano !', atraso(n_inimigos))
                 else:
-                    slow_print(f'\n Inimigo {i[0]} ERROU o ataque!', atraso(n_inimigos))
+                    slow_print(f'\nInimigo {i[0]} ERROU o ataque!', atraso(n_inimigos))
             else:
                 if acerto >= 25:
                     dano_inimigo = randint(1, 3)
                     player_vida -= dano_inimigo
                     soma_dano_inimigo += dano_inimigo
-                    print(f'\n Inimigo {i[0]} causou {dano_inimigo} de dano !', atraso(n_inimigos))
+                    print(f'\nInimigo {i[0]} causou {dano_inimigo} de dano !', atraso(n_inimigos))
                     if player_vida < 0:
                         player_vida = 0
                         dano_b_total_r1 = 0
                         dano_b_total_r2 = 0
                         cont_morte_r1 = 0
                         cont_morte_r2 = 0
-                        slow_print(f'\n VIDA DO HERÓI = {player_vida}', atraso=ATRASO_PADRAO)
-                        slow_print(' ...', atraso=ATRASO_PEQUENO)
-                        slow_print(' ..', atraso=ATRASO_PEQUENO)
-                        slow_print(' .', atraso=ATRASO_PEQUENO)
-                        slow_print('\n GOLPE FATAL !!!', atraso=ATRASO_PADRAO)
-                        slow_print('\n NOSSO HERÓI SUCUMBE DIANTE DA HORDA INIMIGA ...', atraso=5)
-                        slow_print(' ...', atraso=ATRASO_PEQUENO)
-                        slow_print(' ..', atraso=ATRASO_PEQUENO)
-                        slow_print(' .', atraso=ATRASO_PEQUENO)
-                        slow_print('\n É O FIM.', end='', atraso=ATRASO_PADRAO * 2)
-                        slow_print('.', end='', atraso=ATRASO_PEQUENO)
-                        slow_print('.', end='',  atraso=ATRASO_PEQUENO)
-                        slow_print(' MAS ESPERE !!!!!\n', atraso=ATRASO_PEQUENO)
-                        slow_print(' O QUE ESTÁ ACONTECENDO...?!?!?\n', atraso=ATRASO_PADRAO)
-                        slow_print(' NÚVENS NEGRAS SURGEM E O CÉU COMEÇA A ESCURECER...\n', atraso=ATRASO_PADRAO)
-                        slow_print(' TUDO ESTÁ TREMENDO,\n', atraso=ATRASO_PADRAO)
-                        slow_print(' RAIOS ECLODEM DA TERRA E RASGAM O CÉU...\n', atraso=ATRASO_PADRAO)
-                        slow_print(' TROVÕES IRROMPEM TODA A REGIÃO, ESTREMECENDO O ÍMPITO DO INIMIGO.\n', atraso=ATRASO_PADRAO)
-                        slow_print(' DO MADA, UMA ENORME EXPLOSÃO ARREMESSA OS INIMIGOS CENTENAS DE METROS...\n', atraso=ATRASO_PADRAO)
-                        slow_print(' DO SEU EPICENTRO, ESTÁ NOSSO HERÓI...\n', atraso=ATRASO_PADRAO)
-                        slow_print(' MAS AGORA ELE ESTÁ DIFERENTE...\n', atraso=ATRASO_PADRAO)
-                        slow_print(' AGORA ELE ESTÁ SEDENTO POR SANGUE.\n', atraso=ATRASO_PADRAO)
-                        slow_print(' NOSSO HERÓI SE TORNOU...UM BESERKER !!!\n', atraso=ATRASO_PADRAO)
-                        slow_print(' TEMIDO POR SUA IRA, O BESERKER SE TORNOU UMA LENDA...\n', atraso=ATRASO_PADRAO)
-                        slow_print(' SEU CORPO POSSUI UMA AURA NEGRA E VERVELHA, SEUS OLHOS SÃO BRANCOS, E DELES SAEM\n'
-                                   ' RAIOS QUE ESTRAÇALHAM AS ROCHAS AO SEU REDOR; \n', atraso=ATRASO_PADRAO)
-                        slow_print(' FLUTUAMDO RENTE AO SOLO, NOSSO HERÓI ENCARA OS INIMIGOS...\n', atraso=ATRASO_PADRAO)
-                        slow_print(' E EM FRAÇÃO DE SEGUNDOS OS ALCANÇA, DESFERINDO ATAQUES DE GRANDE PODER.\n', atraso=ATRASO_PADRAO)
-                        input(' PRESSIONE ENTER PARA CONTINUAR...\n')
-                        sleep(ATRASO_PEQUENO)
+                        pre_berkerker(player_vida)
+
                         slow_print('\n-----::..::| MODO BESERKER ATIVADO |::..::-----\n', atraso=ATRASO_PADRAO)
                         while n_rodadas_b < 2:
-                            slow_print(f'\n=====.::| BESERKER RODADA {n_rodadas_b + 1} |::.=====\n', atraso=ATRASO_MEDIO)
+                            slow_print(f'\n=====.::| BESERKER RODADA {n_rodadas_b + 1} |::.=====\n',
+                                       atraso=ATRASO_MEDIO)
                             n_ataques = 1
                             slow_print('.::| ATAQUES BESERKER |::.', atraso=ATRASO_PEQUENO)
                             tam_lista_inimigo = len(lista_inimigo)
@@ -414,7 +420,8 @@ while jogando:
                                     if n_inimigos == 0:
                                         sleep(ATRASO_PADRAO)
                                         print('\n Nº Inimigos = 0\n')
-                                        slow_print(' .::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.', atraso=ATRASO_PEQUENO)
+                                        slow_print(' .::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.',
+                                                   atraso=ATRASO_PEQUENO)
                                         restart = valida_str('JS', ' (J)ogar novamente ou (S)air:\n')
                                         jogando = restart == 'J'
                                         break
