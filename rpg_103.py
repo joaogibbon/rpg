@@ -2,47 +2,39 @@
 
 from random import randint, choice
 from time import sleep
+from typing import List
 
 # 0001 - f-strings, quebra da validinput
+# 0002 - movendo o input para dentro de valida_str e valida_int, type hints
 
 
-def valida_str(nome, valor, limite, msg):
+def valida_str(limite, msg) -> str:
     while True:
-        valor = valor.strip().upper()
-        while True:
-            if not valor.isalpha() or valor not in limite or len(valor) == 0:
-                print(' OPÇÃO INVÁLIDA !!!\n')
-                valor = str(input(msg))
-                valor = valor.strip().upper()
-            else:
-                break
-        break
+        valor = input(msg).strip().upper()
+        if not valor.isalpha() or valor not in limite or len(valor) == 0:
+            print(' OPÇÃO INVÁLIDA !!!\n')
+        else:
+            break
     return valor
 
 
-def valida_int(nome, valor, limite, msg):
+def valida_int(nome: str, limite, mensagem: str) -> int:
     while True:
-        valor = valor.strip()
-        while not valor.isnumeric() or valor.isalpha() or len(valor) == 0 or int(valor) not in limite:
+        valor = input(mensagem).strip()
+        if not valor.isnumeric() or valor.isalpha() or len(valor) == 0 or int(valor) not in limite:
             if not valor.isnumeric() or valor.isalpha() or len(valor) == 0:
                 print(' OPÇÃO INVÁLIDA !!!\n')
-                valor = str(input(msg))
-                valor = valor.strip()
             elif nome == 'inimigo':
                 print(' INIMIGO NÃO SE ENCONTRA NA LISTA !!!\n')
-                valor = str(input(msg))
-                valor = valor.strip()
             elif nome == 'inimigo_s':
                 print(' INIMIGO NÃO SE ENCONTRA NA LISTA !!!\n')
-                valor = str(input(msg))
-                valor = valor.strip()
+            elif nome == 'ninimigos':
+                print(' NÚMERO INVÁLIDO !!!\n')
             else:
                 print(' OPÇÃO INVÁLIDA !!!\n')
-                valor = str(input(msg))
-                valor = valor.strip()
-
-        break
-    return valor
+        else:
+            break
+    return int(valor)
 
 
 def instrucao():
@@ -77,9 +69,8 @@ tam_titulo = len(titulo)
 print('\n' + '=' * tam_titulo)
 print(titulo)
 print('=' * tam_titulo)
-iniciar = str(input('\n Pressione (C)omeçar ou (I)nstruções:\n'))
-iniciar = valida_str('iniciar', iniciar, 'CI', '\n Pressione (C)omeçar ou (I)nstruções:\n')
 jogando = False
+iniciar = valida_str('CI', '\n Pressione (C)omeçar ou (I)nstruções:\n')
 
 if iniciar == 'C':
     jogando = True
@@ -96,14 +87,9 @@ while jogando:
     n_rodadas = 0
     n_rodadas_b = 0
     n_super_cura = True
-    n_inimigos = str(input('\n Escolha o número de inimigos:\n'))
+    n_inimigos = valida_int("ninimigos", range(1, 50), '\n Escolha o número de inimigos:\n')
 
-    while not n_inimigos.isnumeric() or int(n_inimigos) <= 0:
-        print(' NÚMERO INVÁLIDO !!!\n')
-        n_inimigos = str(input('\n Escolha o número de inimigos:\n'))
-
-    n_inimigos = int(n_inimigos)
-    lista_inimigo = []
+    lista_inimigo: List[List[int]] = []
 
     for i in range(n_inimigos):
         lista_inimigo.append([i + 1, inimigo_vida])
@@ -113,8 +99,8 @@ while jogando:
             n_rodadas_b = 3
         print('\n-----.::| LISTA DE INIMIGOS |::.-----\n')
         sleep(1.5)
-        for i in lista_inimigo:
-            print(' - inimigo ({}) -- vida = {}'.format(i[0], i[1]))
+        for numero, vida in lista_inimigo:
+            print(f' - inimigo ({numero}) -- vida = {vida}')
             if n_inimigos <= 20:
                 sleep(0.25)
             elif n_inimigos <= 50:
@@ -137,16 +123,14 @@ while jogando:
             if n_rodadas > 0:
                 if n_inimigos > 10 and n_rodadas % 10 == 0:
                     print('-----' + '.::| SUPER-CURA ativada |::.' + '-----' + '\n')
-            opcao = str(input(' Selecione ATACAR (1), SKIlls (2): \n'))
-            opcao = valida_int('opcao', opcao, [1, 2], ' Selecione ATACAR (1), SKIlls (2): \n')
-            if int(opcao) == 1:
+            opcao = valida_int('opcao', [1, 2], ' Selecione ATACAR (1), SKIlls (2): \n')
+            if opcao == 1:
                 erro_skill = False
                 lista_limite = []
                 for inimigo in lista_inimigo:
                     lista_limite.append(inimigo[0])
 
-                inimigo = str(input(' Selecione um inimigo da lista acima: \n'))
-                inimigo = valida_int('inimigo', inimigo, lista_limite, ' Selecione um inimigo da lista acima: \n')
+                inimigo = valida_int('inimigo', lista_limite, ' Selecione um inimigo da lista acima: \n')
                 escolhido = []
                 for i in lista_inimigo:
                     if i[0] == int(inimigo):
@@ -171,31 +155,22 @@ while jogando:
                     sleep(1.25)
                     lista_inimigo.remove(escolhido)
                     n_inimigos -= 1
-            elif int(opcao) == 2:
+            elif opcao == 2:
                 erro_skill = False
                 while 1:
                     if erro_skill:
                         break
                     if n_rodadas % 10 == 0 and n_rodadas != 0 and n_inimigos > 10:
-                        skill = str(input(' Selecione a Skill desejada: \n '
-                                          '- PIERCE (1)\n '
-                                          '- SLASH (2)\n '
-                                          '- CURAR (3)\n '
-                                          '- SUPER-CURA (4)\n'))
-                        skill = valida_int('skill', skill, [1, 2, 3, 4], ' Selecione a Skill desejada: \n '
-                                                                         '- PIERCE (1)\n '
-                                                                         '- SLASH (2)\n '
-                                                                         '- CURAR (3)\n '
-                                                                         '- SUPER-CURA (4)\n')
+                        skill = valida_int('skill', [1, 2, 3, 4], ' Selecione a Skill desejada: \n '
+                                                                  '- PIERCE (1)\n '
+                                                                  '- SLASH (2)\n '
+                                                                  '- CURAR (3)\n '
+                                                                  '- SUPER-CURA (4)\n')
                     else:
-                        skill = str(input(' Selecione a Skill desejada: \n '
-                                          '- PIERCE (1)\n '
-                                          '- SLASH (2)\n '
-                                          '- CURAR (3)\n'))
-                        skill = valida_int('skill', skill, [1, 2, 3], ' Selecione a Skill desejada: \n '
-                                                                      '- PIERCE (1)\n '
-                                                                      '- SLASH (2)\n '
-                                                                      '- CURAR (3)\n')
+                        skill = valida_int('skill', [1, 2, 3], ' Selecione a Skill desejada: \n '
+                                                               '- PIERCE (1)\n '
+                                                               '- SLASH (2)\n '
+                                                               '- CURAR (3)\n')
                     lista_limite = []
                     for inimigo in lista_inimigo:
                         lista_limite.append(inimigo[0])
@@ -207,8 +182,7 @@ while jogando:
                             erro_skill = True
                         else:
                             player_sp -= 10
-                            inimigo_p = str(input(' Selecione um inimigo da lista acima: \n'))
-                            inimigo_p = valida_int('inimigo', inimigo_p, lista_limite, ' Selecione um inimigo da lista acima: \n')
+                            inimigo_p = valida_int('inimigo', lista_limite, ' Selecione um inimigo da lista acima: \n')
                             escolhido = []
                             for i in lista_inimigo:
                                 if i[0] == int(inimigo_p):
@@ -249,16 +223,13 @@ while jogando:
                             cont_slash = 0
                             lista_inimigo_s = []
                             lista_inimigo_s_aux = []
-                            opc_skill_2 = str(input(' Selecionar inimigos (1) ou AUTO (2):\n'))
-                            opc_skill_2 = valida_int('opc_skill_2',
-                                                     opc_skill_2, [1, 2],
+                            opc_skill_2 = valida_int('opc_skill_2', [1, 2],
                                                      ' Selecionar inimigos (1) ou AUTO (2):\n')
-                            if int(opc_skill_2) == 1:
+                            if opc_skill_2 == 1:
                                 while cont_slash < 5:
-                                    inimigo_s = str(input(' Selecione o {}º inimigo da lista acima: \n'.format(cont_slash + 1)))
-                                    inimigo_s = valida_int('inimigo', inimigo_s, lista_limite, f" Selecione o {cont_slash + 1}º inimigo da lista acima: \n")
-                                    lista_inimigo_s_aux.append(int(inimigo_s))
-                                    if lista_inimigo_s_aux.count(int(inimigo_s)) > 1:
+                                    inimigo_s = valida_int('inimigo', lista_limite, f" Selecione o {cont_slash + 1}º inimigo da lista acima: \n")
+                                    lista_inimigo_s_aux.append(inimigo_s)
+                                    if lista_inimigo_s_aux.count(inimigo_s) > 1:
                                         print(' INIMIGO REPETIDO !!!\n')
                                         lista_inimigo_s_aux.remove(lista_inimigo_s_aux[(-1)])
                                     else:
@@ -361,8 +332,7 @@ while jogando:
             print('\n Nº Inimigos = 0\n')
             print(' .::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.')
             sleep(1)
-            restart = str(input(' (J)ogar novamente ou (S)air:\n'))
-            restart = valida_str('restart', restart, 'JS', ' (J)ogar novamente ou (S)air:\n')
+            restart = valida_str('JS', ' (J)ogar novamente ou (S)air:\n')
             if restart == 'J':
                 jogando = True
             elif restart == 'S':
@@ -519,8 +489,7 @@ while jogando:
                                         print('\n Nº Inimigos = 0\n')
                                         print(' .::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.')
                                         sleep(1)
-                                        restart = str(input(' (J)ogar novamente ou (S)air:\n'))
-                                        restart = valida_str('restart', restart, 'JS', ' (J)ogar novamente ou (S)air:\n')
+                                        restart = valida_str('JS', ' (J)ogar novamente ou (S)air:\n')
                                         if restart == 'J':
                                             jogando = True
                                         elif restart == 'S':
@@ -576,8 +545,7 @@ while jogando:
             print('\nVIDA = 0\n')
             print(' .::| GAME OVER |::.\n')
             sleep(3)
-            restart = str(input(' (J)ogar novamente ou (S)air:\n'))
-            restart = valida_str('restart', restart, 'JS', ' (J)ogar novamente ou (S)air:\n')
+            restart = valida_str('JS', ' (J)ogar novamente ou (S)air:\n')
             if restart == 'J':
                 jogando = True
             elif restart == 'S':
