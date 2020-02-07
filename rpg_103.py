@@ -1,6 +1,7 @@
  # coding=utf-8
 from random import randint, choice
 from time import sleep
+from operator import itemgetter
 
 
 def validinput(tipo, nome, valor, limite, msg):
@@ -110,7 +111,7 @@ while jogando:
             n_rodadas_b = 3
         print('\n-----' + '.::| LISTA DE INIMIGOS |::.' + '-----' + '\n')
         sleep(1.5)
-        for i in lista_inimigo:
+        for i in sorted(lista_inimigo, key=itemgetter(1), reverse=True):
             print(' - inimigo ({}) -- vida = {}'.format(i[0], i[1]))
             if n_inimigos <= 20:
                 sleep(0.25)
