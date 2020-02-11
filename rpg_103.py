@@ -4,10 +4,11 @@
 #
 # Requer Python 3.6 ou superior
 #
+import sys
 
-from random import randint, choice, choices
+from random import randint, choice, sample
 from time import sleep
-from typing import List, Optional
+from typing import List, Optional, Union
 
 # 0001 - f-strings, quebra da validinput
 # 0002 - movendo o input para dentro de valida_str e valida_int, type hints
@@ -16,7 +17,10 @@ from typing import List, Optional
 # 0005 - Instruções movidas para arquivo externo
 # 0006 - Função pre-berserker, correção de erros de acentuação
 # 0007 - Recortando as funções
+# 0008 - Mais funções, barras de vida, modo sem pausa dev
 
+
+# Atrasos na impressão de mensagens em segundos
 ATRASO_PADRAO = 3
 ATRASO_METADE = 1.5
 ATRASO_MEDIO = 2
@@ -80,10 +84,14 @@ n_inimigos = 0
 player_sp = 0
 player_vida = 0
 n_rodadas = 0
+n_super_cura = None
+n_rodadas_b = 0
 lista_inimigo: List[List[int]] = []
 
+INSTRUCOES = None
 
-def valida_str(limite, msg) -> str:
+
+def valida_str(limite: Union[str, List[str]], msg: str) -> str:
     while True:
         valor = input(msg).strip().upper()
         if not valor.isalpha() or valor not in limite or len(valor) == 0:
@@ -93,7 +101,7 @@ def valida_str(limite, msg) -> str:
     return valor
 
 
-def valida_int(limite, mensagem: str, mensagem_de_erro: Optional[str] = OPCAO_INVALIDA) -> int:
+def valida_int(limite: List[int], mensagem: str, mensagem_de_erro: Optional[str] = OPCAO_INVALIDA) -> int:
     while True:
         valor = input(mensagem).strip()
         if not valor.isnumeric() or valor.isalpha() or len(valor) == 0 or int(valor) not in limite:
@@ -132,11 +140,8 @@ def pausa(mensagem: str):
     input(mensagem)
 
 
-# Globais
-INSTRUCOES = None
-
-
 def inicialize():
+    """Inicializa ou reinicializa as variáveis globais do jogo"""
     global player_vida, player_sp, n_rodadas_antes_b
     global n_rodadas, n_rodadas_b, n_super_cura, n_inimigos
     global lista_inimigo
@@ -146,12 +151,11 @@ def inicialize():
     n_rodadas = 0
     n_rodadas_b = 0
     n_super_cura = True
-    lista_inimigo = []
     n_inimigos = valida_int(range(1, MAX_INIMIGOS + 1),
-                            "\nEscolha o número de inimigos:\n",
+                            f"\nEscolha o número de inimigos (max:{MAX_INIMIGOS}):\n",
                             NUMERO_INVALIDO)
-    for i in range(n_inimigos):
-        lista_inimigo.append([i + 1, INIMIGO_VIDA])
+    # Gera inimigos
+    lista_inimigo = [[i + 1, INIMIGO_VIDA] for i in range(n_inimigos)]
 
 
 def instrucao():
@@ -198,7 +202,7 @@ def pre_berserker(vida: int):
     sleep(ATRASO_PEQUENO)
 
 
-def lista_posicao_de_inimigos(lista_inimigo):
+def lista_posicao_de_inimigos(lista_inimigo: List) -> List[int]:
     return [inimigo[0] for inimigo in lista_inimigo]
 
 
@@ -241,7 +245,7 @@ def rodada_de_super_cura() -> bool:
     return n_inimigos > 10 and n_rodadas != 0 and n_rodadas % 10 == 0
 
 
-def pierce_ataque(lista_inimigo) -> bool:
+def pierce_ataque(lista_inimigo: list) -> bool:
     global player_sp
     if player_sp < SP_PIERCE:
         slow_print('\n Você não possui SP suficiente (PIERCE = {SP_PIERCE} SP)', ATRASO_PADRAO)
@@ -256,30 +260,30 @@ def pierce_ataque(lista_inimigo) -> bool:
     return True
 
 
-def slash_ataque(lista_inimigo) -> bool:
+def slash_ataque(lista_inimigo: list) -> bool:
     global player_sp
     if n_inimigos < SLASH_INIMIGOS_MIN:
-        print(f'\n Você não pode usar o SLASH com menos de {SLASH_INIMIGOS_MIN} inimígos')
+        print(f'\nVocê não pode usar o SLASH com menos de {SLASH_INIMIGOS_MIN} inimígos')
         return False
     if player_sp < SP_CUSTO_SLASH:
-        slow_print(f'\n Você não possui SP suficiente (Slash = {SP_CUSTO_SLASH} SP)', atraso=ATRASO_PADRAO)
+        slow_print(f'\nVocê não possui SP suficiente (Slash = {SP_CUSTO_SLASH} SP)', atraso=ATRASO_PADRAO)
         return False
     player_sp -= SP_CUSTO_SLASH
-    opcao = valida_int([1, 2], ' Selecionar inimigos (1) ou AUTO (2):\n')
+    opcao = valida_int([1, 2], 'Selecionar inimigos (1) ou AUTO (2):\n')
     if opcao == 1:
         lista_limite = lista_posicao_de_inimigos(lista_inimigo)
         lista_inimigo_s = []
         lista_inimigo_s_aux = []
         for cont_slash in range(0, SLASH_INIMIGOS_MIN):
             inimigo_s = valida_int(
-                lista_limite, f" Selecione o {cont_slash + 1}º inimigo da lista acima: \n",
+                lista_limite, f"Selecione o {cont_slash + 1}º inimigo da lista acima: \n",
                 INIMIGO_FORA_DA_LISTA)
             lista_limite.remove(inimigo_s)
             lista_inimigo_s_aux.append(inimigo_s)
         for i in lista_inimigo_s_aux:
             lista_inimigo_s.append(pega_inimigo_por_posicao(lista_inimigo, i))
     elif opcao == 2:
-        lista_inimigo_s = choices(lista_inimigo, k=5)
+        lista_inimigo_s = sample(lista_inimigo, 5)
 
     caixa(' SLASH ATTACK !!!')
     sleep(ATRASO_METADE)
@@ -290,7 +294,7 @@ def slash_ataque(lista_inimigo) -> bool:
     return True
 
 
-def curar():
+def curar() -> bool:
     global player_sp, player_vida
     if player_sp < SP_CUSTO_CURAR:
         slow_print(f'\nVocê não possui SP suficiente (CURAR = {SP_CUSTO_CURAR} SP)',
@@ -306,7 +310,7 @@ def curar():
     return True
 
 
-def super_cura():
+def super_cura() -> bool:
     global player_sp, player_vida, n_super_cura
     if player_sp < SP_CUSTO_SUPERCURA:
         slow_print(f'\nVocê não possui SP suficiente (SUPER CURAR = {SP_CUSTO_SUPERCURA} SP)',
@@ -332,6 +336,7 @@ def skills(lista_inimigo: list) -> bool:
         numero_opcoes.append(4)
 
     skill = valida_int(numero_opcoes, opcoes)
+    print()
 
     if skill == 1:
         return pierce_ataque(lista_inimigo)
@@ -424,7 +429,6 @@ def turno_do_inimigo(lista_inimigo: list):
     global player_vida, n_rodadas_b
     soma_dano_inimigo = 0
     slow_print('\n----- .::| TURNO DO INIMIGO |::. -----\n', atraso=ATRASO_METADE)
-    print('=' * 36)
     for i in lista_inimigo:
         acerto = randint(1, ATAQUE_MAX)
         causa_dano = (
@@ -435,9 +439,9 @@ def turno_do_inimigo(lista_inimigo: list):
             dano_inimigo = randint(DANO_MINIMO, DANO_MAXIMO)
             player_vida -= dano_inimigo
             soma_dano_inimigo += dano_inimigo
-            slow_print(f'\nInimigo {i[0]} causou {dano_inimigo} de dano !', atraso(n_inimigos))
+            slow_print(f'Inimigo {i[0]} causou {dano_inimigo} de dano !', atraso(n_inimigos))
         else:
-            slow_print(f'\nInimigo {i[0]} ERROU o ataque!', atraso(n_inimigos))
+            slow_print(f'Inimigo {i[0]} ERROU o ataque!', atraso(n_inimigos))
 
             if n_rodadas_b != 3 and player_vida < 0:
                 berserker(lista_inimigo)
@@ -445,66 +449,140 @@ def turno_do_inimigo(lista_inimigo: list):
             break
 
     if n_rodadas_b != 2:
-        slow_print(f'\n DANO TOTAL = {soma_dano_inimigo}', atraso=ATRASO_PADRAO)
-        print('=' * 33)
+        slow_print(f'\nDANO TOTAL = {soma_dano_inimigo}', atraso=ATRASO_PADRAO)
+        print('=' * 39)
 
 
-caixa(f"{'-' * 40}  A LENDA DO BERSERKER {'-' * 40}", borda="-", margem=0)
-iniciar = valida_str('CI', '\nPressione (C)omeçar ou (I)nstruções:\n')
+def verifica_bonus_de_vida() -> None:
+    global n_rodadas_b, n_rodadas, player_sp
+    if n_rodadas_b == 3:
+        if n_rodadas % 10 == 0:
+            if player_sp < 25:
+                player_sp += 72
+                slow_print('\nHERÓI GANHOU 75 SP !!!', atraso=ATRASO_MEDIO)
 
-jogando = True
-if iniciar == 'I':
-    instrucao()
 
-while jogando:
-    inicialize()
+def barra(valor: int, dez: Optional[str] = "X", um: str = "I", separador: str = " ") -> str:
+    if dez is None:
+        u = valor
+        return f"{u * um}{separador}{valor}"
+    else:
+        d = valor // 10
+        u = valor % 10
+        return f"{dez * d}{u * um}{separador}{valor}"
+
+
+def imprime_inimigos() -> None:
+    global lista_inimigos, n_inimigos
+    slow_print('\n-----.::| LISTA DE INIMIGOS |::.-----\n', ATRASO_METADE)
+    t_atraso = atraso(n_inimigos)
+    for numero, vida in lista_inimigo:
+        slow_print(f' - inimigo {numero:3d} vida: {barra(vida, dez=None)}', t_atraso)
+    print(f'\nNº de inimigos = {n_inimigos}')
+
+
+def imprime_status_do_heroi() -> None:
+    global player_vida, player_sp
+    print('\n\n===== STATUS DO HERÓI =====')
+    verifica_bonus_de_vida()
+    print(f'\n  VIDA = {barra(player_vida)}')
+    print(f'  SP   = {barra(player_sp)}\n')
+
+
+def menu() -> None:
+    global n_rodadas
     while True:
-        if n_rodadas_b == 2:
-            n_rodadas_b = 3
-        slow_print('\n-----.::| LISTA DE INIMIGOS |::.-----\n', ATRASO_METADE)
-        for numero, vida in lista_inimigo:
-            slow_print(f' - inimigo ({numero}) -- vida = {vida}',
-                       atraso(n_inimigos))
-
-        print(f'\n Nº de inimigos = {n_inimigos}')
-        print('\n\n===== STATUS DO HERÓI =====')
-        if n_rodadas_b == 3:
-            if n_rodadas % 10 == 0:
-                if player_sp < 25:
-                    player_sp += 72
-                    slow_print('\n HERÓI GANHOU 75 SP !!!', atraso=ATRASO_MEDIO)
-        print(f'\n  VIDA = {player_vida}')
-        print(f'  SP = {player_sp}\n')
-        slow_print('-----.::| TURNO DO HERÓI |::.-----\n', atraso=ATRASO_METADE)
-        while True:
-            if n_rodadas > 0:
-                if rodada_de_super_cura():
-                    print('-----.::| SUPER-CURA ativada |::.-----\n')
-            opcao = valida_int([1, 2], 'Selecione Atacar (1), Skills (2): \n')
-            sem_erro = True
-            if opcao == 1:
-                sem_erro = ataque(lista_inimigo)
-            elif opcao == 2:
-                sem_erro = skills(lista_inimigo)
-            if sem_erro:
-                break
-
-        turno_do_inimigo(lista_inimigo)
-        if n_inimigos == 0:
-            sleep(ATRASO_METADE)
-            print('\n Nº Inimigos = 0\n')
-            slow_print('.::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.', atraso=ATRASO_PEQUENO)
+        if rodada_de_super_cura():
+            print('-----.::| SUPER-CURA ativada |::.-----\n')
+        opcao = valida_int([1, 2], 'Selecione Atacar (1), Skills (2): \n')
+        sem_erro = True
+        print()
+        if opcao == 1:
+            sem_erro = ataque(lista_inimigo)
+        elif opcao == 2:
+            sem_erro = skills(lista_inimigo)
+        if sem_erro:
             break
-        elif player_vida <= 0:
-            print('\nVIDA = 0\n')
-            slow_print(' .::| GAME OVER |::.\n', atraso=ATRASO_PADRAO)
-            break
-        if n_rodadas_b != 2:
-            player_sp += min(player_sp + 3, MAX_SP)
 
-        n_rodadas += 1
 
+def titulo() -> None:
+    caixa(f"{'-' * 40}  A LENDA DO BERSERKER {'-' * 40}", borda="-", margem=0)
+    iniciar = valida_str('CI', '\nPressione (C)omeçar ou (I)nstruções:\n')
+    if iniciar == 'I':
+        instrucao()
+
+
+def fim_vitoria() -> None:
+    sleep(ATRASO_METADE)
+    print('\n Nº Inimigos = 0\n')
+    slow_print('.::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.', atraso=ATRASO_PEQUENO)
+
+
+def fim_morte() -> None:
+    print('\nVIDA = 0\n')
+    slow_print(' .::| GAME OVER |::.\n', atraso=ATRASO_PADRAO)
+
+
+def jogar_novamente() -> bool:
     restart = valida_str('JS', ' (J)ogar novamente ou (S)air:\n')
-    jogando = restart == 'J'
+    return restart == 'J'
 
-slow_print('\n -FIM-', atraso=ATRASO_PADRAO)
+
+def fim_de_jogo() -> bool:
+    global n_inimigos, player_vida
+    if n_inimigos == 0:
+        fim_vitoria()
+        return True
+    elif player_vida <= 0:
+        fim_morte()
+        return True
+    return False
+
+
+def incrementa_sp() -> None:
+    global n_rodadas_b, player_sp
+    if n_rodadas_b != 2:
+        player_sp = min(player_sp + 3, MAX_SP)
+
+
+def turno_do_heroi() -> None:
+    slow_print('-----.::| TURNO DO HERÓI |::.-----\n', atraso=ATRASO_METADE)
+    menu()
+
+
+def jogo() -> None:
+    global n_rodadas, n_rodadas_b, n_inimigos, player_sp
+    jogando = True
+    titulo()
+    while jogando:
+        inicialize()
+        while True:
+            if n_rodadas_b == 2:
+                n_rodadas_b = 3
+            imprime_inimigos()
+            imprime_status_do_heroi()
+            turno_do_heroi()
+            if fim_de_jogo():
+                break
+            turno_do_inimigo(lista_inimigo)
+            if fim_de_jogo():
+                break
+            incrementa_sp()
+            n_rodadas += 1
+
+        jogando = jogar_novamente()
+    slow_print('\n-FIM-', atraso=ATRASO_PADRAO)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) >= 2:
+        if sys.argv[1] == "dev":
+            ATRASO_PADRAO = 0
+            ATRASO_METADE = 0
+            ATRASO_MEDIO = 0
+            ATRASO_PEQUENO = 0
+            PAUSA_CURTA = 0.0
+            PAUSA_MEDIA = 0.0
+            PAUSA_LONGA = 0.0
+
+    jogo()
