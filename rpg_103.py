@@ -8,11 +8,15 @@ import sys
 
 from random import randint, choice, sample
 from time import sleep
-from typing import List
+from typing import List, Tuple
 from mensagens import (INIMIGO_FORA_DA_LISTA, NUMERO_INVALIDO, TITULO_REGRA, PRESSIONE_ENTER)
 
 from util import valida_str, valida_int, slow_print, caixa, barra, pausa
 
+#
+# https://github.com/lskbr/rpg
+#
+# Tags:
 # 0001 - f-strings, quebra da validinput
 # 0002 - movendo o input para dentro de valida_str e valida_int, type hints
 # 0003 - slow print, impressao em caixa
@@ -21,7 +25,12 @@ from util import valida_str, valida_int, slow_print, caixa, barra, pausa
 # 0006 - Função pre-berserker, correção de erros de acentuação
 # 0007 - Recortando as funções
 # 0008 - Mais funções, barras de vida, modo sem pausa dev
-# 0009 - Primeiras classes
+# 0009 - Primeiras classes: Configuração, Inimigo, Jogador, Jogo e Partida. Módulos para utilitários.
+# 0010 - Exceção RPGException, lógica do jogo movida para Partida, correções de bugs
+
+
+class RPGException(Exception):
+    pass
 
 
 class Configuracao:
@@ -44,6 +53,7 @@ class Configuracao:
         self.max_inimigos = 100
 
         self.max_sp = 100  # Número máximo de pontos skill (SP)
+        self.sp_por_dadada = 3  # Recuperação de SP por rodada
 
         # Ataque do jogador
         self.jogador_ataque_min = 15  # Dano mínimo
@@ -72,12 +82,10 @@ class Configuracao:
         self.dano_maximo = 3
 
         # Probabilidade de dano - mode berzerker
+        self.berzerker_max_rodadas = 2
         self.berzerker_dano_min = 25
         self.berzerker_dano_max = 40
         self.berzerker_vida_drenada = 0.1
-
-
-INSTRUCOES = None
 
 
 class Jogador:
@@ -126,6 +134,7 @@ class Partida:
         self.n_rodadas_b = 0
         self.n_rodadas_antes_b = 0
         self.n_super_cura = True
+        self.berzerker_dano_total = 0
 
     def posicao_de_inimigos(self) -> List[int]:
         return [inimigo.numero for inimigo in self.inimigos]
@@ -134,22 +143,122 @@ class Partida:
         for inimigo in self.inimigos:
             if inimigo.numero == posicao:
                 return inimigo
-        raise Exception(f"Posição inválida {posicao}")
+        raise RPGException(f"Posição inválida {posicao}")
 
     def elimina_inimigo(self, inimigo: Inimigo):
         self.inimigos.remove(inimigo)
+        self.n_inimigos = len(self.inimigos)
 
-    def danifica_inimigo(self, posicao: int, dano: int):
-        inimigo = self.pega_inimigo_por_posicao(posicao)
+    def danifica_inimigo(self, inimigo: Inimigo, dano: int):
         inimigo.danifica(dano)
         if inimigo.morto():
             self.elimina_inimigo(inimigo)
 
+    def danifica_inimigo_posicao(self, posicao: int, dano: int):
+        inimigo = self.pega_inimigo_por_posicao(posicao)
+        self.danifica_inimigo(inimigo, dano)
+
     def rodada_de_super_cura(self) -> bool:
         return self.n_inimigos > 10 and self.n_rodadas != 0 and self.n_rodadas % 10 == 0
 
+    def pode_pierce_ataque(self) -> bool:
+        return self.jogador.sp >= self.configuracao.sp_pierce
+
+    def pierce(self):
+        if self.pode_pierce_ataque():
+            self.jogador.consome_sp(self.configuracao.sp_pierce)
+
+    def pierce_ataque(self, posicao: int):
+        dano_player = randint(self.configuracao.pierce_dano_min, self.configuracao.pierce_dano_max)
+        self.danifica_inimigo_posicao(posicao, dano_player)
+
+    def tem_inimigos_pra_slash_ataque(self) -> bool:
+        return self.n_inimigos >= self.configuracao.slash_inimigos_min
+
+    def tem_sp_para_slash_ataque(self) -> bool:
+        return self.jogador.sp >= self.configuracao.sp_custo_slash
+
+    def slash(self):
+        if self.tem_sp_para_slash_ataque() and self.tem_inimigos_pra_slash_ataque():
+            self.jogador.consome_sp(self.configuracao.sp_custo_slash)
+
+    def dano_slash_ataque(self) -> int:
+        dano = randint(self.configuracao.slash_dano_min, self.configuracao.slash_dano_max)
+        return dano
+
+    def dano_ataque(self) -> int:
+        dano = randint(self.configuracao.jogador_ataque_min, self.configuracao.jogador_ataque_max)
+        return dano
+
+    def pode_curar(self) -> bool:
+        return self.jogador.sp >= self.configuracao.sp_custo_curar
+
+    def pontos_de_cura(self) -> int:
+        return randint(self.configuracao.curar_min, self.configuracao.curar_max)
+
+    def cura(self) -> int:
+        if self.pode_curar():
+            cura = self.pontos_de_cura()
+            self.jogador.cura(cura)
+            self.jogador.consome_sp(self.configuracao.sp_custo_curar)
+            return cura
+        return 0
+
+    def pode_super_cura(self) -> bool:
+        return self.jogador.sp > self.configuracao.sp_custo_supercura
+
+    def super_cura(self) -> int:
+        if self.pode_super_cura():
+            self.jogador.cura(self.configuracao.super_cura)
+            self.jogador.consome_sp(self.configuracao.sp_custo_supercura)
+            self.n_super_cura = False
+            return self.configuracao.super_cura
+        return 0
+
+    def dano_berzerker(self) -> int:
+        return randint(self.configuracao.berzerker_dano_min, self.configuracao.berzerker_dano_max)
+
+    def berzerker_ataque(self) -> Tuple[Inimigo, int, int]:
+        inimigo = choice(self.inimigos)
+        dano = self.dano_berzerker()
+        vida_antes = inimigo.vida
+        self.danifica_inimigo(inimigo, dano)
+        self.berzerker_dano_total += dano
+        return inimigo, vida_antes, dano
+
+    def berzerker_recupera_vida(self) -> Tuple[int, int]:
+        if self.berzerker_dano_total > 0:
+            vida_drenada = round(self.configuracao.berzerker_vida_drenada * self.berzerker_dano_total)
+            self.jogador.vida = vida_drenada
+            self.jogador.sp = 0
+            return vida_drenada, self.berzerker_dano_total
+        return 0, 0
+
+    def dano_inimigo(self) -> int:
+        dano_inimigo = 0
+        acerto = randint(1, self.configuracao.ataque_max)
+        causa_dano = (
+                self.n_rodadas_b == 3 and acerto >= self.configuracao.ataque_minimo_para_dano_berzerker) or (
+                self.n_rodadas_b != 3 and acerto >= self.configuracao.ataque_minimo_para_dano)
+
+        if causa_dano:
+            dano_inimigo = randint(self.configuracao.dano_minimo, self.configuracao.dano_maximo)
+            self.jogador.fere(dano_inimigo)
+        return dano_inimigo
+
+    def incrementa_sp(self) -> None:
+        if self.n_rodadas_b != 2:
+            self.jogador.sp = min(self.jogador.sp + self.configuracao.sp_por_dadada,
+                                  self.configuracao.max_sp)
+
+    def fim_rodada(self):
+        self.incrementa_sp()
+        self.n_rodadas += 1
+
 
 class Jogo:
+    INSTRUCOES = None
+
     def __init__(self, configuracao: Configuracao):
         self.configuracao = configuracao
 
@@ -161,20 +270,19 @@ class Jogo:
         self.partida = Partida(n_inimigos, configuracao)
 
     def atraso(self, n: int) -> float:
-        conf = self.configuracao
         if n < 50:
-            return conf.pausa_longa
+            return self.configuracao.pausa_longa
         elif n < 100:
-            return conf.pausa_media
+            return self.configuracao.pausa_media
         else:
-            return conf.pausa_curta
+            return self.configuracao.pausa_curta
 
     def danifica_inimigo(self, posicao: int, dano: int):
         conf = self.configuracao
         escolhido = self.partida.pega_inimigo_por_posicao(posicao)
 
         pv_inimigo_antes = escolhido.vida
-        self.partida.danifica_inimigo(posicao, dano)
+        self.partida.danifica_inimigo(escolhido, dano)
 
         slow_print(f' Atacando o inimigo {posicao}', atraso=conf.atraso_metade)
         slow_print(f"\n Você causou {dano} de dano ao inimigo {posicao} ! "
@@ -187,22 +295,20 @@ class Jogo:
         conf = self.configuracao
         lista_limite = self.partida.posicao_de_inimigos()
         posicao = valida_int(lista_limite,
-                             'Selecione um inimigo da lista acima: \n',
+                             'Selecione um inimigo da lista acima:\n',
                              INIMIGO_FORA_DA_LISTA)
 
-        dano_player = randint(conf.jogador_ataque_min,
-                              conf.jogador_ataque_max)
-        self.partida.danifica_inimigo(posicao, dano_player)
+        dano_player = self.partida.dano_ataque()
+        self.partida.danifica_inimigo_posicao(posicao, dano_player)
         return True
 
     def instrucao(self):
-        global INSTRUCOES
         print(f'\n{TITULO_REGRA:^40}')
         # Carrega as instruções do arquivo externo, mas só na primeira vez.
-        if INSTRUCOES is None:
+        if self.INSTRUCOES is None:
             with open("instruções.txt", "r", encoding="utf-8") as f:
-                INSTRUCOES = f.read()
-        print(INSTRUCOES)
+                self.INSTRUCOES = f.read()
+        print(self.INSTRUCOES)
         pausa(PRESSIONE_ENTER)
 
     def pre_berserker(self):
@@ -242,27 +348,28 @@ class Jogo:
 
     def pierce_ataque(self) -> bool:
         conf = self.configuracao
-        if self.partida.jogador.sp < conf.sp_pierce:
+        if not self.partida.pode_pierce_ataque():
             slow_print('\n Você não possui SP suficiente (PIERCE = {conf.sp_pierce} SP)', conf.atraso_padrao)
             return False
-        self.partida.jogador.consome_sp(conf.sp_pierce)
+        self.partida.pierce()
         lista_limite = self.partida.posicao_de_inimigos()
         posicao = valida_int(lista_limite, 'Selecione um inimigo da lista acima:\n',
                              INIMIGO_FORA_DA_LISTA)
         caixa(f'PIERCE ATTACK no inimigo {posicao}')
-        dano_player = randint(conf.pierce_dano_min, conf.pierce_dano_max)
-        self.partida.danifica_inimigo(posicao, dano_player)
+        self.partida.pierce_ataque(posicao)
         return True
 
     def slash_ataque(self) -> bool:
         conf = self.configuracao
-        if self.partida.n_inimigos < conf.slash_inimigos_min:
+        if not self.partida.tem_inimigos_pra_slash_ataque():
             print(f'\nVocê não pode usar o SLASH com menos de {conf.slash_inimigos_min} inimígos')
             return False
-        if self.partida.jogador.sp < conf.sp_custo_slash:
-            slow_print(f'\nVocê não possui SP suficiente (Slash = {conf.sp_custo_slash} SP)', atraso=conf.atraso_padrao)
+        if not self.partida.tem_sp_para_slash_ataque():
+            slow_print(f'\nVocê não possui SP suficiente (Slash = {conf.sp_custo_slash} SP)',
+                       atraso=conf.atraso_padrao)
             return False
-        self.partida.jogador.consome_sp(conf.sp_custo_slash)
+
+        self.partida.slash()
         opcao = valida_int([1, 2], 'Selecionar inimigos (1) ou AUTO (2):\n')
         if opcao == 1:
             lista_limite = self.partida.posicao_de_inimigos()
@@ -279,22 +386,18 @@ class Jogo:
         caixa(' SLASH ATTACK !!!')
         sleep(conf.atraso_metade)
         for posicao in lista_inimigo_s:
-            dano_player = randint(conf.slash_dano_min, conf.slash_dano_max)
+            dano_player = self.partida.dano_slash_ataque()
             self.danifica_inimigo(posicao, dano_player)
         slow_print('\n', atraso=conf.atraso_metade)
         return True
 
     def curar(self) -> bool:
         conf = self.configuracao
-        if self.partida.jogador.sp < conf.sp_custo_curar:
+        if not self.partida.pode_curar():
             slow_print(f'\nVocê não possui SP suficiente (CURAR = {conf.sp_custo_curar} SP)',
                        atraso=conf.atraso_padrao)
             return False
-
-        cura = randint(conf.curar_min, conf.curar_max)
-        self.partida.jogador.cura(cura)
-        self.partida.jogador.consome_sp(conf.sp_custo_curar)
-
+        cura = self.partida.cura()
         print(f'Você recuperou {cura} pontos de vida!\n')
         print(f'  VIDA: {self.partida.jogador.vida}')
         slow_print(f'  SP: {self.partida.jogador.sp}\n', atraso=conf.atraso_medio)
@@ -302,14 +405,12 @@ class Jogo:
 
     def super_cura(self) -> bool:
         conf = self.configuracao
-        if self.partida.jogador.sp < conf.sp_custo_supercura:
+        if not self.partida.pode_super_cura() < conf.sp_custo_supercura:
             slow_print(f'\nVocê não possui SP suficiente (SUPER CURAR = {conf.sp_custo_supercura} SP)',
                        atraso=conf.atraso_padrao)
             return False
-        self.partida.jogador.cura(conf.super_cura)
-        self.partida.jogador.consome_sp(conf.sp_custo_supercura)
-        self.partida.n_super_cura = False
-        print(f'Você recuperou {conf.super_cura} pontos de vida!\n')
+        pontos_super_cura = self.partida.super_cura()
+        print(f'Você recuperou {pontos_super_cura} pontos de vida!\n')
         print(f'  VIDA: {self.partida.jogador.vida}')
         slow_print(f'  SP: {self.partida.jogador.sp}\n', atraso=conf.atraso_medio)
         return True
@@ -335,21 +436,21 @@ class Jogo:
             return self.curar()
         elif skill == 4:
             return self.super_cura()
-        raise Exception(f"Skill inválida {skill}")  # Pro mypy :-D
+        raise RPGException(f"Skill inválida {skill}")  # Pro mypy :-D
 
-    def berserker_stats(self,
-                        cont_morte_r1, cont_morte_r2, dano_b_total_r1,
-                        dano_b_total_r2, total_morte,
-                        dano_b_total, vida_drenada):
+    def berserker_stats(self, cont_morte, cont_dano, vida_drenada):
+        dano_total = sum(cont_dano)
+        total_morte = sum(cont_morte)
         print('\n\n-----.::| MODO BERSERKER DESATIVADO |::.-----\n\n\n')
         print('xxxxx.::| ESTATÍSTICA BERSERKER |::.xxxxx\n\n')
-        print(f' - MORTES DA RODADA 1 = {cont_morte_r1}\n')
-        print(f' - MORTES DA RODADA 2 = {cont_morte_r2}\n')
-        print(f' - DANO DA RODADA 1 = {dano_b_total_r1}\n')
-        print(f' - DANO DA RODADA 2 = {dano_b_total_r2}\n')
+        for rodada in range(len(cont_morte)):
+            print(f' - MORTES DA RODADA {rodada + 1} = {cont_morte[rodada]}\n')
         print(f' - TOTAL DE MORTES = {total_morte}\n')
+
+        for rodada in range(len(cont_morte)):
+            print(f' - DANO DA RODADA {rodada + 1} = {cont_dano[rodada]}\n')
+        print(f' - TOTAL DE DANO = {dano_total}\n')
         print(f' - INIMIGOS RESTANTES = {self.partida.n_inimigos}\n')
-        print(f' - TOTAL DE DANO = {dano_b_total}\n')
         print(f' - PONTOS DE VIDA DRENADOS = {vida_drenada}\n')
         print(f' - VIDA = {self.partida.jogador.vida}\n')
         print(f' - SP = {self.partida.jogador.sp}\n')
@@ -358,96 +459,64 @@ class Jogo:
 
     def berserker(self):
         conf = self.configuracao
-        self.partida.jogador.vida = 0
-        dano_b_total_r1 = 0
-        dano_b_total_r2 = 0
-        cont_morte_r1 = 0
-        cont_morte_r2 = 0
+        dano_b_total = [0] * conf.berzerker_max_rodadas
+        cont_morte = [0] * conf.berzerker_max_rodadas
         self.pre_berserker()
 
-        slow_print('\n-----::..::| MODO BERSERKER ATIVADO |::..::-----\n', atraso=conf.conf.atraso_padrao)
-        while self.partida.n_rodadas_b < 2:
+        slow_print('\n-----::..::| MODO BERSERKER ATIVADO |::..::-----\n', atraso=conf.atraso_padrao)
+        while self.partida.n_rodadas_b < 2 and self.partida.n_inimigos > 0:
             slow_print(f'\n=====.::| BERSERKER RODADA {self.partida.n_rodadas_b + 1} |::.=====\n',
-                       atraso=conf.conf.atraso_medio)
+                       atraso=conf.atraso_medio)
 
-            slow_print('.::| ATAQUES BERSERKER |::.', atraso=conf.conf.atraso_pequeno)
+            slow_print('.::| ATAQUES BERSERKER |::.', atraso=conf.atraso_pequeno)
             for n_ataques in range(self.partida.n_inimigos):
-                escolhido = choice(self.partida.inimigos)
-                dano_b = randint(self.conf.berzerker_dano_min,
-                                 self.conf.berzerker_dano_max)
-                pv_i_antes = escolhido.vida
-                escolhido.danifica(dano_b)
-                if self.partida.n_rodadas_b == 0:
-                    dano_b_total_r1 += dano_b
-                elif self.partida.n_rodadas_b == 1:
-                    dano_b_total_r2 += dano_b
+                escolhido, vida_antes, dano_b = self.partida.berzerker_ataque()
+                dano_b_total[self.partida.n_rodadas_b] += dano_b
                 slow_print(f"\n Você causou {dano_b} de dano ao inimigo {escolhido.numero} ! "
-                           f"({pv_i_antes} - {dano_b} = {escolhido.vida})", self.atraso(self.partida.n_inimigos))
+                           f"({vida_antes} - {dano_b} = {escolhido.vida})", self.atraso(self.partida.n_inimigos))
                 if escolhido.vida <= 0:
                     caixa(f'   Você matou o inimigo {escolhido.numero}!')
-                    self.partida.danifica_inimigo(escolhido.numero)
                     sleep(self.atraso(self.partida.n_inimigos))
+                    cont_morte[self.partida.n_rodadas_b] += 1
+                if self.partida.n_inimigos == 0:
+                    slow_print('\n Nº Inimigos = 0\n', atraso=conf.atraso_padrao)
+                    slow_print(' .::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.', atraso=conf.atraso_pequeno)
+                    break
 
-                    if self.partida.n_rodadas_b == 0:
-                        cont_morte_r1 += 1
-                    elif self.partida.n_rodadas_b == 1:
-                        cont_morte_r2 += 1
-                    if self.inimigos.n_inimigos == 0:
-                        sleep(conf.atraso_padrao)
-                        print('\n Nº Inimigos = 0\n')
-                        slow_print(' .::| PARABÉNS, VOCÊ MATOU TODOS OS INIMIGOS |::.',
-                                   atraso=conf.atraso_pequeno)
-                        break
-
-            if self.partida.n_inimigos == 0:
-                break
-            slow_print(f'\n\n.::| FIM DA RODADA {self.partida.n_rodadas_b + 1} |::.', atraso=conf.conf.atraso_padrao)
+            slow_print(f'\n\n.::| FIM DA RODADA {self.partida.n_rodadas_b + 1} |::.', atraso=conf.atraso_padrao)
             self.partida.n_rodadas_b += 1
+        vida_drenada, _ = self.partida.berzerker_recupera_vida()
+        self.berserker_stats(cont_morte, dano_b_total, vida_drenada)
 
-        dano_b_total = dano_b_total_r1 + dano_b_total_r2
-        total_morte = cont_morte_r1 + cont_morte_r2
-        vida_drenada = round(conf.berzerker_vida_drenada * dano_b_total)
-        self.partida.jogador.cura(vida_drenada)
-        self.partida.jogador.sp = 0
-        self.berserker_stats(
-            cont_morte_r1, cont_morte_r2, dano_b_total_r1,
-            dano_b_total_r2, total_morte, dano_b_total, vida_drenada)
-
-    def turno_do_inimigo(self):
+    def turno_do_inimigo(self) -> bool:
         conf = self.configuracao
         soma_dano_inimigo = 0
         slow_print('\n----- .::| TURNO DO INIMIGO |::. -----\n', atraso=conf.atraso_metade)
         for inimigo in self.partida.inimigos:
-            acerto = randint(1, conf.ataque_max)
-            causa_dano = (
-                self.partida.n_rodadas_b == 3 and acerto >= conf.ataque_minimo_para_dano_berzerker) or (
-                self.partida.n_rodadas_b != 3 and acerto >= conf.ataque_minimo_para_dano)
-
-            if causa_dano:
-                dano_inimigo = randint(conf.dano_minimo, conf.dano_maximo)
-                self.partida.jogador.fere(dano_inimigo)
-                soma_dano_inimigo += dano_inimigo
-                slow_print(f'Inimigo {inimigo.numero} causou {dano_inimigo} de dano !',
+            dano = self.partida.dano_inimigo()
+            if dano > 0:
+                slow_print(f'Inimigo {inimigo.numero} causou {dano} de dano !',
                            self.atraso(self.partida.n_inimigos))
+                soma_dano_inimigo += dano
             else:
                 slow_print(f'Inimigo {inimigo.numero} ERROU o ataque!', self.atraso(self.partida.n_inimigos))
 
-                if self.partida.n_rodadas_b != 3 and self.partida.jogador.sp < 0:
-                    self.berserker()
+            if self.partida.n_rodadas_b != 3 and self.partida.jogador.vida < 0:
+                self.berserker()
             if self.partida.n_rodadas_b == 2:
                 break
 
         if self.partida.n_rodadas_b != 2:
             slow_print(f'\nDANO TOTAL = {soma_dano_inimigo}', atraso=conf.atraso_padrao)
             print('=' * 39)
+        return self.fim_de_jogo()
 
     def verifica_bonus_de_vida(self) -> None:
-        conf = self.configuracao
         if self.partida.n_rodadas_b == 3:
             if self.partida.n_rodadas % 10 == 0:
                 if self.partida.jogador.sp < 25:
                     self.partida.jogador.bonus_sp(72)
-                    slow_print('\nHERÓI GANHOU 75 SP !!!', atraso=conf.atraso_medio)
+                    slow_print('\nHERÓI GANHOU 75 SP !!!', atraso=self.configuracao.atraso_medio)
 
     def imprime_inimigos(self) -> None:
         conf = self.configuracao
@@ -507,14 +576,11 @@ class Jogo:
             return True
         return False
 
-    def incrementa_sp(self) -> None:
-        if self.partida.n_rodadas_b != 2:
-            self.partida.jogador.sp = min(self.partida.jogador.sp + 3, self.configuracao.max_sp)
-
-    def turno_do_heroi(self) -> None:
+    def turno_do_heroi(self) -> bool:
         conf = self.configuracao
         slow_print('-----.::| TURNO DO HERÓI |::.-----\n', atraso=conf.atraso_metade)
         self.menu()
+        return self.fim_de_jogo()
 
     @classmethod
     def loop(cls, configuracao) -> None:
@@ -527,17 +593,14 @@ class Jogo:
                     jogo.partida.n_rodadas_b = 3
                 jogo.imprime_inimigos()
                 jogo.imprime_status_do_heroi()
-                jogo.turno_do_heroi()
-                if jogo.fim_de_jogo():
+                if jogo.turno_do_heroi():
                     break
-                jogo.turno_do_inimigo()
-                if jogo.fim_de_jogo():
+                if jogo.turno_do_inimigo():
                     break
-                jogo.incrementa_sp()
-                jogo.partida.n_rodadas += 1
+                jogo.partida.fim_rodada()
 
             jogando = jogo.jogar_novamente()
-        slow_print('\n-FIM-', atraso=jogo.configuracao.atraso_padrao)
+        slow_print('\n--- FIM ---', atraso=jogo.configuracao.atraso_padrao)
 
 
 if __name__ == "__main__":
