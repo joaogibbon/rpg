@@ -602,7 +602,6 @@ class Jogo:
             jogando = jogo.jogar_novamente()
         slow_print('\n--- FIM ---', atraso=jogo.configuracao.atraso_padrao)
 
-
 if __name__ == "__main__":
     configuracao = Configuracao()
     if len(sys.argv) >= 2:
