@@ -1,0 +1,47 @@
+
+- Escolha o número de inimigos;
+      
+- Escolha a ação desejada;
+
+- ATACAR: o Herói SEMPRE acerta o inimigo, 
+          infligindo 10-15 de dano ao alvo selecionado;
+
+- CURAR: recupera 20-50 pontos de vida do Herói, custo de 10 SP;
+
+- MODO BESERKER: ao ter seu limite levado ao extremo, o Herói rompe as 
+     barreiras de suas limitações mundanas, elevando-se ao status BESERKER;
+     (Ler REGRA abaixo)
+       
+- SUPER CURA: recupera 250 pontos de vida do Herói, custo de 50 SP; 
+              (Ler REGRA abaixo)
+       
+- ATAQUE INIMIGO: O inimigo terá 25% de chance de errar o ataque 
+     (50% após o MODO BESERKER) , caso contrário, infligirá 1-3 pontos de dano 
+     ao Herói;
+
+Regra Geral:
+            
+A cada rodada você ganhará 3 de SP, a não ser quando o "MODO BESERKER" for
+DESATIVADO; 
+       
+Regras do Modo Beserker: 
+- O MODO BESERKER será ativado 1 VEZ por jogo;
+- Contém DUAS RODADAS;       
+- Em cada rodada, o heroi irá realizar ATAQUES SUCESSIVOS e ALEATÓRIOS;         
+  (o jogador não poderá escolher o inimigo a ser atacado neste modo.)       
+- O nº de ataques POR RODADA, será igual à quantidade de inimigos 
+  no campo de batalha;       
+- Cada ataque, gera 20-40 pontos de dano ao inimigo;
+- O inimigo não consegue atacar o Herói no MODO BESERKER;
+- Ao final das duas rodadas, o MODO BESERKER será DESATIVADO;      
+- O Herói irá drenar, em forma de pontos de vida, 10% do DANO TOTAL 
+  aplicado por ele nas duas rodadas;
+- Ao ser DESATIVADO, o Herói terá ZERO de SP;      
+
+
+Regra Super Cura:
+            
+Requisitos para ATIVAR a "SUPER CURA":   
+- Nº de inimigos > 10;
+- Nº de turnos na partida for múltiplo de 10;
+     
